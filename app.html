@@ -216,10 +216,12 @@ tr:hover td{background:var(--surface2)}
 .cal-cell.other-month .cal-day-num{color:var(--fg3)}
 .cal-dots{display:flex;flex-wrap:wrap;gap:3px}
 .cal-dot{height:6px;border-radius:999px;min-width:6px;flex:1;max-width:20px}
+.cal-dot.todo{background:var(--danger)}
+.cal-dot.in_progress{background:var(--warning)}
+.cal-dot.done{background:var(--accent)}
 .cal-dot.urgent,.cal-dot.high{background:var(--danger)}
 .cal-dot.medium{background:var(--warning)}
 .cal-dot.low{background:var(--fg3)}
-.cal-dot.done{background:var(--accent)}
 .day-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
 .day-panel-title{font-size:15px;font-weight:700;color:var(--fg);margin-bottom:14px}
 .day-task-item{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;cursor:pointer;transition:var(--transition)}
@@ -822,6 +824,17 @@ body.view-only .view-only-badge{display:flex}
     <div class="page-header">
       <div><div class="page-title">Calendar</div><div class="page-subtitle">Task schedule and upcoming work</div></div>
       <button class="btn btn-primary edit-only" onclick="openModal('addTask')"><i data-lucide="plus"></i>New Task</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <select id="calFilterStaff" class="form-input form-select" style="max-width:200px;padding:7px 32px 7px 10px;font-size:13px" onchange="renderCalendar();if(selectedDate)selectDay(selectedDate)">
+        <option value="">All staff</option>
+      </select>
+      <select id="calFilterStatus" class="form-input form-select" style="max-width:180px;padding:7px 32px 7px 10px;font-size:13px" onchange="renderCalendar();if(selectedDate)selectDay(selectedDate)">
+        <option value="">All statuses</option>
+        <option value="todo">🔴 Not started</option>
+        <option value="in_progress">🟠 In progress</option>
+        <option value="done">🟢 Complete</option>
+      </select>
     </div>
     <div class="cal-layout">
       <div>
@@ -1667,7 +1680,14 @@ function navigate(page) {
   if (page === 'dashboard') { updateDashStats(); initCharts(); updateYardCodeDisplay(); }
   if (page === 'horses') renderHorses(currentFilter);
   if (page === 'health') { renderVaxGrid(); renderHealthTable(); renderAppointments(); populateHorseSelects(); }
-  if (page === 'calendar') { renderCalendar(); lucide.createIcons(); }
+  if (page === 'calendar') {
+    const staffSel = document.getElementById('calFilterStaff');
+    if (staffSel) {
+      const cur = staffSel.value;
+      staffSel.innerHTML = '<option value="">All staff</option>' + users.map(u => `<option${u.name===cur?' selected':''}>${u.name}</option>`).join('');
+    }
+    renderCalendar(); lucide.createIcons();
+  }
   if (page === 'staff') { renderStaff(); renderClockLog(); renderRota(); }
   if (page === 'feed') { renderFeedGrid(); populateFeedHorseSelect(); }
   if (page === 'shopping') { renderShoppingList(); }
@@ -2250,8 +2270,10 @@ function renderCalendar() {
     const cellDate = new Date(calYear, calMonth, d);
     const isToday = cellDate.getTime() === today.getTime();
     const isSel = ds === selectedDate;
-    const dayTasks = tasks.filter(t => t.due === ds);
-    const dots = dayTasks.map(t => `<div class="cal-dot ${t.status==='done'?'done':t.priority}" title="${t.title}"></div>`).join('');
+    const _calStaff = document.getElementById('calFilterStaff')?.value||'';
+    const _calStatus = document.getElementById('calFilterStatus')?.value||'';
+    const dayTasks = tasks.filter(t => t.due === ds && (!_calStaff || t.assignee === _calStaff) && (!_calStatus || t.status === _calStatus));
+    const dots = dayTasks.map(t => `<div class="cal-dot ${t.status}" title="${t.title}"></div>`).join('');
     html += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectDay('${ds}')">
       <div class="cal-day-num">${d}</div>
       ${dots ? `<div class="cal-dots">${dots}</div>` : ''}
@@ -2277,13 +2299,15 @@ function renderDayPanel(ds) {
   const [y,m,d] = ds.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const label = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
-  const dayTasks = tasks.filter(t => t.due === ds);
+  const _fStaff = document.getElementById('calFilterStaff')?.value||'';
+  const _fStatus = document.getElementById('calFilterStatus')?.value||'';
+  const dayTasks = tasks.filter(t => t.due === ds && (!_fStaff || t.assignee === _fStaff) && (!_fStatus || t.status === _fStatus));
   const panel = document.getElementById('dayPanel');
   if (!dayTasks.length) {
     panel.innerHTML = `<div class="day-panel-title">${label}</div><div class="day-empty"><i data-lucide="calendar" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 8px"></i><p>No tasks on this day</p></div>${canEdit()?`<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="openModal('addTask')"><i data-lucide="plus"></i>Add task</button></div>`:''}  `;
   } else {
     panel.innerHTML = `<div class="day-panel-title">${label} — ${dayTasks.length} task${dayTasks.length!==1?'s':''}</div>${dayTasks.map(t=>`
-      <div class="day-task-item">
+      <div class="day-task-item" style="border-left:4px solid ${t.status==='done'?'var(--accent)':t.status==='in_progress'?'var(--warning)':'var(--danger)'}">`
         <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">
           <div class="day-task-title">${t.title}${t.horse?' — '+t.horse:''}</div>
           <span class="badge ${PRIORITY_BADGE[t.priority]}" style="font-size:11px">${t.priority}</span>
