@@ -1583,10 +1583,14 @@ async function createYard() {
     const userId = signInData.user.id;
     // Now insert yard with active session so RLS passes
     const yardCode = genYardCode();
-    const { data: yard, error: yardErr } = await sb.from('yards').insert({ name: yardName, owner_id: userId, owner_email: email, yard_code: yardCode, trial_start: new Date().toISOString(), subscription_status: 'active' }).select().single();
+    // Check if this email has a confirmed payment waiting
+    const { data: pendingPayment } = await sb.from('pending_payments').select('id').eq('email', email).maybeSingle();
+    const subStatus = pendingPayment ? 'paid' : 'active';
+    const { data: yard, error: yardErr } = await sb.from('yards').insert({ name: yardName, owner_id: userId, owner_email: email, yard_code: yardCode, trial_start: new Date().toISOString(), subscription_status: subStatus }).select().single();
     if (yardErr) { hideLoading(); errEl.textContent = yardErr.message; errEl.style.display='block'; return; }
     const { error: memErr } = await sb.from('yard_members').insert({ yard_id: yard.id, name, role: 'Yard Manager', pin, permission: 'admin', color: '#2563EB' });
     if (memErr) { hideLoading(); errEl.textContent = memErr.message; errEl.style.display='block'; return; }
+    if (pendingPayment) await sb.from('pending_payments').delete().eq('email', email);
     await afterYardAuth();
   } catch(e) { hideLoading(); errEl.textContent = e.message||'Connection failed. Check your Supabase keys.'; errEl.style.display='block'; }
 }

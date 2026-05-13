@@ -25,8 +25,23 @@ async function updateYard(supabaseUrl, serviceKey, email, status) {
     },
     body: JSON.stringify({ subscription_status: status }),
   });
-  if (!res.ok) console.error('Supabase update failed:', await res.text());
+  if (!res.ok) console.error('Supabase yard update failed:', await res.text());
   else console.log(`Set ${email} subscription_status to ${status}`);
+}
+
+async function savePendingPayment(supabaseUrl, serviceKey, email) {
+  const res = await fetch(`${supabaseUrl}/rest/v1/pending_payments`, {
+    method: 'POST',
+    headers: {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) console.error('Failed to save pending payment:', await res.text());
+  else console.log(`Saved pending payment for ${email}`);
 }
 
 exports.handler = async (event) => {
@@ -49,12 +64,18 @@ exports.handler = async (event) => {
 
   if (stripeEvent.type === 'checkout.session.completed') {
     const email = stripeEvent.data.object.customer_details?.email || stripeEvent.data.object.customer_email;
-    if (email) await updateYard(supabaseUrl, serviceKey, email, 'paid');
+    if (email) {
+      await updateYard(supabaseUrl, serviceKey, email, 'paid');
+      await savePendingPayment(supabaseUrl, serviceKey, email);
+    }
   }
 
   if (stripeEvent.type === 'invoice.payment_succeeded') {
     const email = stripeEvent.data.object.customer_email;
-    if (email) await updateYard(supabaseUrl, serviceKey, email, 'paid');
+    if (email) {
+      await updateYard(supabaseUrl, serviceKey, email, 'paid');
+      await savePendingPayment(supabaseUrl, serviceKey, email);
+    }
   }
 
   if (stripeEvent.type === 'customer.subscription.deleted') {
