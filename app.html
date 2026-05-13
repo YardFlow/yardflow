@@ -322,6 +322,8 @@ tr:hover td{background:var(--surface2)}
 .feed-col-del{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.3);border:none;color:#fff;width:16px;height:16px;border-radius:50%;font-size:10px;cursor:pointer;line-height:1;display:none;align-items:center;justify-content:center;padding:0}
 .feed-table th:hover .feed-col-del{display:flex}
 .feed-empty{padding:40px;text-align:center;color:var(--fg3);font-size:14px}
+input[name="ap-urgency"]:checked+.ap-urg-btn{opacity:1;box-shadow:0 0 0 3px currentColor}
+.ap-urg-btn{opacity:.5;transition:opacity .15s}
 
 /* Staff */
 .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
@@ -1173,6 +1175,14 @@ body.view-only .view-only-badge{display:flex}
           <option>Chiropractor</option><option>Other</option>
         </select></div>
         <div class="form-group"><label class="form-label">Provider / Vet</label><input class="form-input" id="ap-provider" placeholder="e.g. Dr. Sarah Smith"/></div>
+      </div>
+      <div class="form-group"><label class="form-label">Urgency</label>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+          <label style="cursor:pointer"><input type="radio" name="ap-urgency" value="urgent" style="display:none"/><div class="ap-urg-btn" style="text-align:center;padding:8px 4px;border-radius:8px;border:2px solid #EF4444;color:#EF4444;font-size:12px;font-weight:700">🔴 Urgent</div></label>
+          <label style="cursor:pointer"><input type="radio" name="ap-urgency" value="high" style="display:none"/><div class="ap-urg-btn" style="text-align:center;padding:8px 4px;border-radius:8px;border:2px solid #F97316;color:#F97316;font-size:12px;font-weight:700">🟠 High</div></label>
+          <label style="cursor:pointer"><input type="radio" name="ap-urgency" value="medium" checked style="display:none"/><div class="ap-urg-btn" style="text-align:center;padding:8px 4px;border-radius:8px;border:2px solid #EAB308;color:#EAB308;font-size:12px;font-weight:700;background:#EAB30820">🟡 Medium</div></label>
+          <label style="cursor:pointer"><input type="radio" name="ap-urgency" value="low" style="display:none"/><div class="ap-urg-btn" style="text-align:center;padding:8px 4px;border-radius:8px;border:2px solid #22C55E;color:#22C55E;font-size:12px;font-weight:700">🟢 Low</div></label>
+        </div>
       </div>
       <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="ap-notes" rows="2" placeholder="Any additional details…"></textarea></div>
     </div>
@@ -2625,6 +2635,7 @@ function afterPinSuccess(user) {
   document.getElementById('main').style.visibility = 'visible';
   if (ownerJustAuthenticated) { user.isOwner = true; ownerJustAuthenticated = false; }
   currentUser = user;
+  applyNavPrefs();
   try { sessionStorage.setItem('yf_user', JSON.stringify({id:user.id,name:user.name,role:user.role,color:user.color,permission:user.permission,isOwner:!!user.isOwner})); } catch(e) {}
   hideLoginScreen();
   applyPermissions();
@@ -2893,14 +2904,15 @@ function addAppointment() {
   if (!date) { document.getElementById('ap-date').classList.add('form-err'); showToast('Date is required','error'); return; }
   if (!type) { document.getElementById('ap-type').classList.add('form-err'); showToast('Select a type','error'); return; }
   const h = horses.find(x => x.name === horse);
+  const urgency = document.querySelector('input[name="ap-urgency"]:checked')?.value || 'medium';
   const appt = {
     id: genId(), horse, color: h ? h.color : '#2563EB',
-    date, type,
+    date, type, urgency,
     provider: document.getElementById('ap-provider').value.trim(),
     notes: document.getElementById('ap-notes').value.trim(),
   };
   appointments.push(appt);
-  sb.from('appointments').insert({ id:appt.id, yard_id:currentYardId, horse_name:appt.horse, horse_color:appt.color, appointment_date:appt.date, type:appt.type, provider:appt.provider, notes:appt.notes })
+  sb.from('appointments').insert({ id:appt.id, yard_id:currentYardId, horse_name:appt.horse, horse_color:appt.color, appointment_date:appt.date, type:appt.type, provider:appt.provider, notes:appt.notes, urgency:appt.urgency })
     .then(({error}) => { if(error) showToast('Save failed: '+error.message,'error'); });
   closeModal('addAppointment');
   ['ap-horse','ap-date','ap-type','ap-provider','ap-notes'].forEach(id => { const el=document.getElementById(id); if(el){el.value='';el.classList.remove('form-err');} });
