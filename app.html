@@ -663,7 +663,7 @@ body.view-only .view-only-badge{display:flex}
 </aside>
 
 <!-- MAIN -->
-<div id="main">
+<div id="main" style="visibility:hidden">
   <header id="header">
     <button class="hamburger" onclick="toggleSidebar()"><i data-lucide="menu" style="width:20px;height:20px"></i></button>
     <div class="header-search">
@@ -2622,6 +2622,7 @@ function updatePinDots() {
 }
 
 function afterPinSuccess(user) {
+  document.getElementById('main').style.visibility = 'visible';
   if (ownerJustAuthenticated) { user.isOwner = true; ownerJustAuthenticated = false; }
   currentUser = user;
   try { sessionStorage.setItem('yf_user', JSON.stringify({id:user.id,name:user.name,role:user.role,color:user.color,permission:user.permission,isOwner:!!user.isOwner})); } catch(e) {}
