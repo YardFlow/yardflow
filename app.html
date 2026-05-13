@@ -667,7 +667,7 @@ body.view-only .view-only-badge{display:flex}
 </aside>
 
 <!-- MAIN -->
-<div id="main" style="visibility:hidden">
+<div id="main">
   <header id="header">
     <button class="hamburger" onclick="toggleSidebar()"><i data-lucide="menu" style="width:20px;height:20px"></i></button>
     <div class="header-search">
@@ -2663,7 +2663,6 @@ function updatePinDots() {
 }
 
 function afterPinSuccess(user) {
-  document.getElementById('main').style.visibility = 'visible';
   if (ownerJustAuthenticated) { user.isOwner = true; ownerJustAuthenticated = false; }
   currentUser = user;
   applyNavPrefs();
@@ -3340,7 +3339,6 @@ const NAV_PAGES = [
 let navPrefs = {}; // { horses: true, health: true, ... }
 
 function applyNavPrefs() {
-  document.getElementById('main').style.visibility = 'visible';
   NAV_PAGES.forEach(p => {
     const navEl = document.querySelector(`.nav-item[data-page="${p.key}"]`);
     const visible = navPrefs[p.key] !== false;
