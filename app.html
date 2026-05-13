@@ -3340,6 +3340,7 @@ const NAV_PAGES = [
 let navPrefs = {}; // { horses: true, health: true, ... }
 
 function applyNavPrefs() {
+  document.getElementById('main').style.visibility = 'visible';
   NAV_PAGES.forEach(p => {
     const navEl = document.querySelector(`.nav-item[data-page="${p.key}"]`);
     const visible = navPrefs[p.key] !== false;
