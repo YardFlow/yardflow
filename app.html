@@ -1379,7 +1379,7 @@ async function loadYardData(yardId) {
   currentYardId = yardId;
   const [mRes, hRes, tRes, hrRes, seRes, apptRes, fdRes, shRes, rotRes] = await Promise.all([
     sb.from('yard_members').select('*').eq('yard_id', yardId).order('name'),
-    sb.from('horses').select('*').eq('yard_id', yardId).order('name'),
+    sb.from('horses').select('id,name,breed,age,gender,height,cost,status,livery,vaccinated,owner_name,notes,color,dob,vac_due,profile_pic,yard_id').eq('yard_id', yardId).order('name'),
     sb.from('tasks').select('*').eq('yard_id', yardId).order('due_date'),
     sb.from('health_records').select('*').eq('yard_id', yardId).order('record_date', {ascending:false}),
     sb.from('clock_events').select('*').eq('yard_id', yardId).order('event_time', {ascending:false}).limit(100),
@@ -1404,7 +1404,7 @@ async function loadYardData(yardId) {
     gender: h.gender||'Mare', height: h.height, cost: h.cost,
     status: h.status||'active', livery: h.livery||'owned',
     vaccinated: h.vaccinated!==false, owner: h.owner_name||'',
-    notes: h.notes||'', color: h.color||'#2563EB', photos: h.photos||[],
+    notes: h.notes||'', color: h.color||'#2563EB', photos: [],
     dob: h.dob||null, vac_due: h.vac_due||null, profile_pic: h.profile_pic||null,
   }));
   tasks = (tRes.data||[]).map(t => ({
@@ -1795,10 +1795,15 @@ function filterHorses(filter, el) {
   renderHorses(filter);
 }
 
-function showHorse(id) {
+async function showHorse(id) {
   const h = horses.find(x => x.id === id);
   if (!h) return;
   editingHorseId = id;
+  // Load photos on demand if not already loaded
+  if (!h.photos || !h.photos.length) {
+    const { data } = await sb.from('horses').select('photos').eq('id', id).single();
+    if (data) h.photos = data.photos || [];
+  }
   const horseTasks = tasks.filter(t => t.horse === h.name && t.status !== 'done');
   document.getElementById('hd-title').textContent = h.name;
   const infoGrid = [
