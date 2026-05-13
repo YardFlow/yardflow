@@ -938,6 +938,7 @@ body.view-only .view-only-badge{display:flex}
             <div class="form-group"><label class="form-label">Role</label><input class="form-input" id="prof-role" readonly style="cursor:default;opacity:.7"/></div>
             <div class="form-group"><label class="form-label">Permission Level</label><input class="form-input" id="prof-perm" readonly style="cursor:default;opacity:.7"/></div>
             <button class="btn btn-primary edit-only" onclick="saveProfile()">Save Changes</button>
+            <a href="https://billing.stripe.com/p/login/8x2eVd4nX8IU5nT8Hl9MY00" target="_blank" class="btn btn-secondary" style="margin-top:12px;display:flex;align-items:center;gap:8px" id="manageSubBtn"><i data-lucide="credit-card"></i>Manage Subscription</a>
             <button class="btn btn-secondary" style="margin-top:12px;color:var(--danger);border-color:var(--danger)" onclick="if(confirm('Sign out of this yard? You will return to the sign-in screen.')) yardSignOut()">Sign Out of Yard</button>
           </div>
         </div>
@@ -1435,6 +1436,9 @@ function showYardAuth() {
   // Check if coming from Stripe payment redirect
   const params = new URLSearchParams(window.location.search);
   if (params.get('setup') === '1' || params.get('payment') === 'success') {
+    // Sign out any existing session so they must create a fresh yard
+    if (sb) await sb.auth.signOut();
+    try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
     switchAuthTab('create');
     window.history.replaceState({}, '', window.location.pathname);
   } else {
@@ -3345,6 +3349,8 @@ async function loadProfile() {
   document.getElementById('prof-perm').value = {admin:'Admin',editor:'Editor',viewer:'Viewer'}[currentUser.permission]||currentUser.permission||'';
   const av = document.getElementById('profileAvatar');
   if (av) { av.textContent = initials(currentUser.name); av.style.background = currentUser.color||'var(--primary)'; }
+  const subBtn = document.getElementById('manageSubBtn');
+  if (subBtn) subBtn.style.display = currentUser.isOwner ? '' : 'none';
   // Get email from Supabase session — only for the yard owner, not PIN-login staff
   try {
     if (currentUser.isOwner) {
