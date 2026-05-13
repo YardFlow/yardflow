@@ -537,8 +537,7 @@ body.view-only .view-only-badge{display:flex}
         <a href="https://buy.stripe.com/8x2eVd4nX8IU5nT8Hl9MY00" style="display:block;padding:12px;border-radius:10px;background:#fff;color:#2563EB;font-size:14px;font-weight:700;text-decoration:none">Subscribe Annually</a>
       </div>
     </div>
-    <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px">After subscribing, return here and click the button below</div>
-    <button onclick="checkPaymentReturn()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:12px">I've subscribed — unlock my yard</button>
+    <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:16px">After subscribing, return here and <strong style="color:rgba(255,255,255,.7)">refresh the page</strong> to access your yard.</div>
     <div style="font-size:12px;color:rgba(255,255,255,.3)">Need help? Contact us at hello@yardflow.pro</div>
     <div style="margin-top:20px"><button onclick="logout()" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer">Sign out</button></div>
   </div>
@@ -3404,6 +3403,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('setupScreen').style.display = 'block';
     lucide.createIcons();
     return;
+  }
+
+  // If coming from Stripe payment redirect
+  const _params = new URLSearchParams(window.location.search);
+  if (_params.get('payment') === 'success' || _params.get('setup') === '1') {
+    window.history.replaceState({}, '', window.location.pathname);
+    try {
+      const { data: { session: existingSession } } = await sb.auth.getSession();
+      if (existingSession) {
+        const { data: existingYard } = await sb.from('yards').select('id').eq('owner_id', existingSession.user.id).maybeSingle();
+        if (existingYard) {
+          // Existing user re-subscribing — load normally, webhook set their status to paid
+          // Fall through to normal load below
+        } else {
+          // Has session but no yard — sign out and show create yard
+          await sb.auth.signOut();
+          try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
+          hideLoading(); showYardAuth(); return;
+        }
+      } else {
+        // No session — brand new user, show create yard
+        hideLoading(); showYardAuth(); return;
+      }
+    } catch(e) {
+      hideLoading(); showYardAuth(); return;
+    }
   }
 
   showLoading('Starting up…');
