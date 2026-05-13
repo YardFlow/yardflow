@@ -825,17 +825,6 @@ body.view-only .view-only-badge{display:flex}
       <div><div class="page-title">Calendar</div><div class="page-subtitle">Task schedule and upcoming work</div></div>
       <button class="btn btn-primary edit-only" onclick="openModal('addTask')"><i data-lucide="plus"></i>New Task</button>
     </div>
-    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-      <select id="calFilterStaff" class="form-input form-select" style="max-width:200px;padding:7px 32px 7px 10px;font-size:13px" onchange="renderCalendar();if(selectedDate)selectDay(selectedDate)">
-        <option value="">All staff</option>
-      </select>
-      <select id="calFilterStatus" class="form-input form-select" style="max-width:180px;padding:7px 32px 7px 10px;font-size:13px" onchange="renderCalendar();if(selectedDate)selectDay(selectedDate)">
-        <option value="">All statuses</option>
-        <option value="todo">🔴 Not started</option>
-        <option value="in_progress">🟠 In progress</option>
-        <option value="done">🟢 Complete</option>
-      </select>
-    </div>
     <div class="cal-layout">
       <div>
         <div class="cal-nav">
@@ -1680,14 +1669,7 @@ function navigate(page) {
   if (page === 'dashboard') { updateDashStats(); initCharts(); updateYardCodeDisplay(); }
   if (page === 'horses') renderHorses(currentFilter);
   if (page === 'health') { renderVaxGrid(); renderHealthTable(); renderAppointments(); populateHorseSelects(); }
-  if (page === 'calendar') {
-    const staffSel = document.getElementById('calFilterStaff');
-    if (staffSel) {
-      const cur = staffSel.value;
-      staffSel.innerHTML = '<option value="">All staff</option>' + users.map(u => `<option${u.name===cur?' selected':''}>${u.name}</option>`).join('');
-    }
-    renderCalendar(); lucide.createIcons();
-  }
+  if (page === 'calendar') { renderCalendar(); lucide.createIcons(); }
   if (page === 'staff') { renderStaff(); renderClockLog(); renderRota(); }
   if (page === 'feed') { renderFeedGrid(); populateFeedHorseSelect(); }
   if (page === 'shopping') { renderShoppingList(); }
@@ -2270,9 +2252,7 @@ function renderCalendar() {
     const cellDate = new Date(calYear, calMonth, d);
     const isToday = cellDate.getTime() === today.getTime();
     const isSel = ds === selectedDate;
-    const _calStaff = document.getElementById('calFilterStaff')?.value||'';
-    const _calStatus = document.getElementById('calFilterStatus')?.value||'';
-    const dayTasks = tasks.filter(t => t.due === ds && (!_calStaff || t.assignee === _calStaff) && (!_calStatus || t.status === _calStatus));
+    const dayTasks = tasks.filter(t => t.due === ds);
     const dots = dayTasks.map(t => `<div class="cal-dot ${t.status}" title="${t.title}"></div>`).join('');
     html += `<div class="cal-cell${isToday?' today':''}${isSel?' selected':''}" onclick="selectDay('${ds}')">
       <div class="cal-day-num">${d}</div>
@@ -2299,9 +2279,7 @@ function renderDayPanel(ds) {
   const [y,m,d] = ds.split('-');
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const label = `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
-  const _fStaff = document.getElementById('calFilterStaff')?.value||'';
-  const _fStatus = document.getElementById('calFilterStatus')?.value||'';
-  const dayTasks = tasks.filter(t => t.due === ds && (!_fStaff || t.assignee === _fStaff) && (!_fStatus || t.status === _fStatus));
+  const dayTasks = tasks.filter(t => t.due === ds);
   const panel = document.getElementById('dayPanel');
   if (!dayTasks.length) {
     panel.innerHTML = `<div class="day-panel-title">${label}</div><div class="day-empty"><i data-lucide="calendar" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 8px"></i><p>No tasks on this day</p></div>${canEdit()?`<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="openModal('addTask')"><i data-lucide="plus"></i>Add task</button></div>`:''}  `;
