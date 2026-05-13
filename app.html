@@ -2992,9 +2992,9 @@ async function checkSubscription() {
       return;
     }
 
-    // Trial expired — show paywall
+    // Trial expired or cancelled — show paywall
     document.getElementById('paywallScreen').style.display = 'flex';
-    document.getElementById('paywallTitle').textContent = 'Your free trial has ended';
+    document.getElementById('paywallTitle').textContent = status === 'cancelled' ? 'Your subscription has ended' : 'Your free trial has ended';
 
   } catch(e) { console.error('Subscription check failed:', e); }
 }
