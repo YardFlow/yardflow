@@ -2285,7 +2285,7 @@ function renderDayPanel(ds) {
     panel.innerHTML = `<div class="day-panel-title">${label}</div><div class="day-empty"><i data-lucide="calendar" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 8px"></i><p>No tasks on this day</p></div>${canEdit()?`<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="openModal('addTask')"><i data-lucide="plus"></i>Add task</button></div>`:''}  `;
   } else {
     panel.innerHTML = `<div class="day-panel-title">${label} — ${dayTasks.length} task${dayTasks.length!==1?'s':''}</div>${dayTasks.map(t=>`
-      <div class="day-task-item" style="border-left:4px solid ${t.status==='done'?'var(--accent)':t.status==='in_progress'?'var(--warning)':'var(--danger)'}">`
+      <div class="day-task-item" style="border-left:4px solid ${t.status==='done'?'var(--accent)':t.status==='in_progress'?'var(--warning)':'var(--danger)'}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px">
           <div class="day-task-title">${t.title}${t.horse?' — '+t.horse:''}</div>
           <span class="badge ${PRIORITY_BADGE[t.priority]}" style="font-size:11px">${t.priority}</span>
