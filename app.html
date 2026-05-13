@@ -3347,7 +3347,7 @@ async function loadProfile() {
   const av = document.getElementById('profileAvatar');
   if (av) { av.textContent = initials(currentUser.name); av.style.background = currentUser.color||'var(--primary)'; }
   const subBtn = document.getElementById('manageSubBtn');
-  if (subBtn) subBtn.style.display = currentUser.isOwner ? '' : 'none';
+  if (subBtn) subBtn.style.display = (currentUser.isOwner || currentUser.permission === 'admin') ? '' : 'none';
   // Get email from Supabase session — only for the yard owner, not PIN-login staff
   try {
     if (currentUser.isOwner) {
