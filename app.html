@@ -3405,30 +3405,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  // If coming from Stripe payment redirect
+  // If coming from Stripe payment redirect — always sign out and show Create Yard
   const _params = new URLSearchParams(window.location.search);
   if (_params.get('payment') === 'success' || _params.get('setup') === '1') {
+    if (sb) await sb.auth.signOut();
+    try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
     window.history.replaceState({}, '', window.location.pathname);
-    try {
-      const { data: { session: existingSession } } = await sb.auth.getSession();
-      if (existingSession) {
-        const { data: existingYard } = await sb.from('yards').select('id').eq('owner_id', existingSession.user.id).maybeSingle();
-        if (existingYard) {
-          // Existing user re-subscribing — load normally, webhook set their status to paid
-          // Fall through to normal load below
-        } else {
-          // Has session but no yard — sign out and show create yard
-          await sb.auth.signOut();
-          try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
-          hideLoading(); showYardAuth(); return;
-        }
-      } else {
-        // No session — brand new user, show create yard
-        hideLoading(); showYardAuth(); return;
-      }
-    } catch(e) {
-      hideLoading(); showYardAuth(); return;
-    }
+    hideLoading();
+    showYardAuth();
+    return;
   }
 
   showLoading('Starting up…');
