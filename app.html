@@ -781,6 +781,13 @@ body.view-only .view-only-badge{display:flex}
           <option>Vaccination</option><option>Deworming</option><option>Physio</option>
           <option>Chiropractor</option><option>Other</option>
         </select>
+        <select id="apptFilterUrgency" class="form-input form-select" style="max-width:160px;padding:7px 32px 7px 10px;font-size:13px" onchange="renderAppointments()">
+          <option value="">All urgency</option>
+          <option value="urgent">🔴 Urgent</option>
+          <option value="high">🟠 High</option>
+          <option value="medium">🟡 Medium</option>
+          <option value="low">🟢 Low</option>
+        </select>
       </div>
       <div class="appt-list" id="apptList">
         <div style="text-align:center;padding:28px 16px;color:var(--fg3)">
@@ -1412,7 +1419,7 @@ async function loadYardData(yardId) {
   appointments = (apptRes.data||[]).map(a => ({
     id: a.id, horse: a.horse_name, color: a.horse_color||'#2563EB',
     date: a.appointment_date, type: a.type||'Vet',
-    provider: a.provider||'', notes: a.notes||'',
+    provider: a.provider||'', notes: a.notes||'', urgency: a.urgency||'medium',
   }));
   clockLog = (seRes.data||[]).map(e => ({
     staffId: e.member_id, name: e.member_name, role: e.member_role||'',
@@ -2823,10 +2830,13 @@ function renderAppointments() {
   }
   const filterHorse = horseFilter ? horseFilter.value : '';
   const filterType = typeFilter ? typeFilter.value : '';
+  const urgencyFilter = document.getElementById('apptFilterUrgency');
+  const filterUrgency = urgencyFilter ? urgencyFilter.value : '';
   const upcoming = appointments
     .filter(a => new Date(a.date + 'T00:00:00') >= today)
     .filter(a => !filterHorse || a.horse === filterHorse)
     .filter(a => !filterType || a.type === filterType)
+    .filter(a => !filterUrgency || (a.urgency||'medium') === filterUrgency)
     .sort((a,b) => a.date.localeCompare(b.date));
 
   const list = document.getElementById('apptList');
@@ -2844,13 +2854,16 @@ function renderAppointments() {
     const SHOW = 3;
     const visible = upcoming.slice(0, SHOW);
     const hidden = upcoming.slice(SHOW);
+    const urgencyColors = { urgent:'#EF4444', high:'#F97316', medium:'#EAB308', low:'#22C55E' };
     const renderCard = a => {
       const d = new Date(a.date + 'T00:00:00');
       const month = d.toLocaleString('en-GB',{month:'short'}).toUpperCase();
       const day = d.getDate();
       const tag = APPT_TAGS[a.type] || 'at-vet';
+      const urgency = a.urgency || 'medium';
+      const uColor = urgencyColors[urgency] || urgencyColors.medium;
       return `<div class="appt-item">
-        <div class="appt-date-box"><span class="appt-month">${month}</span><span class="appt-day">${day}</span></div>
+        <div class="appt-date-box" style="background:${uColor}20;border:2px solid ${uColor}"><span class="appt-month" style="color:${uColor}">${month}</span><span class="appt-day" style="color:${uColor}">${day}</span></div>
         <div class="appt-info">
           <div class="appt-title">${a.type} — ${a.horse}</div>
           <div class="appt-sub">${a.provider||'Provider not set'}</div>
