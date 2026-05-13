@@ -1428,21 +1428,10 @@ async function loadYardData(yardId) {
 // ─── YARD AUTH ─────────────────────────────────────────────────────────────────
 function showYardAuth() {
   document.getElementById('yardAuthScreen').style.display = 'flex';
-  // Set logo if embedded
   const logoEl = document.getElementById('authLogo');
   const sidebarImg = document.querySelector('.sidebar-logo img');
   if (logoEl && sidebarImg) logoEl.src = sidebarImg.src;
-  // Check if coming from Stripe payment redirect
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('setup') === '1' || params.get('payment') === 'success') {
-    // Sign out any existing session so they must create a fresh yard
-    if (sb) await sb.auth.signOut();
-    try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
-    switchAuthTab('create');
-    window.history.replaceState({}, '', window.location.pathname);
-  } else {
-    switchAuthTab('staff');
-  }
+  switchAuthTab('staff');
 }
 function hideYardAuth() {
   document.getElementById('yardAuthScreen').style.display = 'none';
@@ -3409,10 +3398,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const _params = new URLSearchParams(window.location.search);
   if (_params.get('payment') === 'success' || _params.get('setup') === '1') {
     if (sb) await sb.auth.signOut();
-    try { sessionStorage.removeItem('yf_user'); sessionStorage.removeItem('yf_yid'); } catch(e) {}
+    try { sessionStorage.clear(); localStorage.removeItem('sb-hqoqliznmegkrifuxjhj-auth-token'); } catch(e) {}
     window.history.replaceState({}, '', window.location.pathname);
     hideLoading();
     showYardAuth();
+    switchAuthTab('create');
     return;
   }
 
