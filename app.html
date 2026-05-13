@@ -945,10 +945,10 @@ body.view-only .view-only-badge{display:flex}
         <div id="stab-stable" style="display:none">
           <div class="card">
             <div class="card-header"><div class="card-title">Stable Information</div></div>
-            <div class="form-group"><label class="form-label">Stable Name</label><input class="form-input" value="Green Valley Stable"/></div>
-            <div class="form-group"><label class="form-label">Address</label><input class="form-input" value="1247 Meadow Lane, Lexington, KY"/></div>
-            <div class="grid-2"><div class="form-group"><label class="form-label">Capacity (stalls)</label><input class="form-input" type="number" value="20"/></div><div class="form-group"><label class="form-label">Currency</label><select class="form-input form-select"><option>GBP (£)</option><option>EUR (€)</option><option>USD ($)</option></select></div></div>
-            <button class="btn btn-primary" onclick="showToast('Stable info saved')">Save Changes</button>
+            <div class="form-group"><label class="form-label">Stable Name</label><input class="form-input" id="stable-name"/></div>
+            <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="stable-address" placeholder="Enter your stable address"/></div>
+            <div class="grid-2"><div class="form-group"><label class="form-label">Capacity (stalls)</label><input class="form-input" id="stable-capacity" type="number" placeholder="e.g. 20"/></div><div class="form-group"><label class="form-label">Currency</label><select class="form-input form-select"><option>GBP (£)</option><option>EUR (€)</option><option>USD ($)</option></select></div></div>
+            <button class="btn btn-primary" onclick="saveStableInfo()">Save Changes</button>
           </div>
         </div>
         <div id="stab-notifications" style="display:none">
@@ -3328,6 +3328,14 @@ async function saveNavPrefs() {
   showToast('Navigation saved');
 }
 
+function saveStableInfo() {
+  const name = document.getElementById('stable-name').value.trim();
+  if (!name) { showToast('Stable name is required','error'); return; }
+  currentYardName = name;
+  sb.from('yards').update({ name }).eq('id', currentYardId)
+    .then(({error}) => { if(error) showToast('Save failed: '+error.message,'error'); else showToast('Stable info saved'); });
+}
+
 // ─── PROFILE SETTINGS ──────────────────────────────────────────────────────────
 async function loadProfile() {
   if (!currentUser) return;
@@ -3377,6 +3385,7 @@ function settingsTab(tab, el) {
   if (tab === 'users') renderUserMgmt();
   if (tab === 'profile') loadProfile();
   if (tab === 'navigation') renderNavToggleList();
+  if (tab === 'stable') { document.getElementById('stable-name').value = currentYardName||''; }
 }
 
 // ─── KEYBOARD ── merged into single listener above ─────────────────────────────
